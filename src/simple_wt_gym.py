@@ -4,10 +4,10 @@ import gym
 from gym import spaces
 import numpy as np
 
-from wt_dynamics import WindTurbineSimulator
+from .wt_dynamics import WindTurbineSimulator
 
 class SimpleWtGym(gym.Env):
-    def __init__(self, Vx=18, wg_nom=np.radians(7.55), t_max=40):
+    def __init__(self, Vx=18, wg_nom=np.radians(7.55), t_max=40, logging_level=logging.INFO):
         #Simulation parameters
         self.Vx = Vx
         self.wg_nom = wg_nom
@@ -22,13 +22,18 @@ class SimpleWtGym(gym.Env):
         high_obs = np.array([10,90,40], dtype=np.float32)
         self.set_spaces(low_action, high_action, low_obs, high_obs)
 
+        #Logging
+        self.enable_myLog = 1
+        self.myLog = []
+        self.pitch_increment = 0
+
     def step(self, action):
-        assert self.action_space.contains(action), "%r (%s) invalid" % (action, type(action))
         actions = self.map_inputs(action)
         self.state = self.wt_sim.step(actions)
         obs = self.map_outputs(self.state)
         reward = self.reward(obs)
         done = self.do_terminate()
+        self.log_callback()
         return np.array(self.state), reward, done, {}
 
     def reset(self):
@@ -65,9 +70,11 @@ class SimpleWtGym(gym.Env):
         #Pitch incremental inputs
         minPitch = np.radians(5)
         maxPitch = np.radians(45)
+        pitch = self.wt_sim.x[2]
 
-        pitch_deg = norm_delta_pitch*2*self.dt # Max 2 deg/s
-        new_pitch = self.pitch + np.radians(pitch_deg)    
+
+        self.pitch_increment = norm_delta_pitch*2*self.wt_sim.dt # Max 2 deg/s
+        new_pitch = pitch + np.radians(self.pitch_increment)    
         new_pitch = np.clip(new_pitch, minPitch, maxPitch) #Clamp between min and max pitch
 
         Vx = self.Vx
@@ -81,3 +88,22 @@ class SimpleWtGym(gym.Env):
         Vx = self.Vx
         gym_obs=[error_wg,pitch,Vx]   
         return gym_obs
+    
+    def log_callback(self):
+        if self.enable_myLog:
+            if self.wt_sim.ti % 0.1 < 0.01:                
+                self.myLog.append({
+                    "time": self.wt_sim.ti,
+                    "Pitch_increment": self.pitch_increment,
+                    "Cp": self.wt_sim.wt.Cp,
+                    "Lambda_i": self.wt_sim.wt.Lambda_i,
+                    "Lambda": self.wt_sim.wt.Labmda,
+                    "Tem": self.wt_sim.wt.Tem,
+                    "Tm": self.wt_sim.wt.Tm,
+                    "Ia": self.wt_sim.wt.Ia,
+                    "Ea": self.wt_sim.wt.Ea,
+                    "w": self.wt_sim.wt.w,
+                    "pitch": self.wt_sim.wt.pitch,
+                    "dpitch": self.wt_sim.wt.dptich,
+                    "pitch_ref": self.wt_sim.wt.pitch_ref
+                })
