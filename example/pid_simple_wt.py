@@ -4,42 +4,42 @@ import numpy as np
 import beepy
 
 import utils
-#from src.simple_wt_gym_4 import SimpleWtGym4
-from src.simpleWT_gym.wt_dynamics import WindTurbineSimulator
+from src.simpleWT_gym.simple_wt_gym_4 import SimpleWtGym4
+#♠from src.simpleWT_gym.wt_dynamics import WindTurbineSimulator
 
 logging.basicConfig(level=logging.INFO)
 
 #PI controller for pitch
-def pitch_pi(error,Kp,Ki,e_int):
-    e_int = e_int + error #Integral error
+def pitch_pi(error,Kp,Ki,e_int,dt):
+    e_int = (e_int + error)*dt #Integral error
     #PID controller
     pitch_pid = - (Kp*error + Ki*e_int)
-    pitch = np.clip(pitch_pid, np.deg2rad(0), np.deg2rad(90))
-    #pitch=45
-    return pitch
+    #pitch = np.clip(pitch_pid, np.deg2rad(0), np.deg2rad(90))
+    return pitch_pid, e_int
 
 def main():
-    wg_nom = 150*(2*np.pi)/60 #rad/s
+    wind = 12.3
+    wg_nom = 39.5 #rad/s
     #PI parameters
-    Kp = 0.1
-    Ki = 0.001
+    Kp = 1
+    Ki = 100
     
     logging.info("Starting simpleWT-gym example")
-    #gym = SimpleWtGym4(Vx=18, wg_nom=wg_nom, t_max=40)
-    #gym.reset()
-    gym = WindTurbineSimulator()
+
+    env = SimpleWtGym4(Vx=wind, wg_nom=wg_nom)
+    obs = env.reset()
     
     error = 0
     e_int = 0 #PI global variable
 
-    while gym.ti < 40:
-        pitch_ctrl = pitch_pi(error,Kp=Kp,Ki=Ki,e_int=e_int)
-        actions = [pitch_ctrl,18]
-        state = gym.step(actions)
-        wg = gym.x[0]
-        error = wg_nom - wg
+    while env.wt_sim.ti < 50:
+        pitch_ctrl, e_int = pitch_pi(error,Kp,Ki,e_int,env.wt_sim.dt)
+        actions = [pitch_ctrl,wind]
+        state = env.step(actions)
+        obs = state[0]
+        error = obs[0]
     
-    utils.log_and_exit(gym.myLog,5)
+    utils.log_and_exit(env.myLog,395)
 
 if __name__ == "__main__":
     main()

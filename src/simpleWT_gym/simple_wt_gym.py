@@ -6,6 +6,11 @@ import numpy as np
 
 from simpleWT_gym.wt_dynamics import WindTurbineSimulator
 
+"""
+Action: Pitch increment (normalized)
+Observations: GenSpeed error, Pitch, Wind Speed x
+Rewards: -speed_error^2
+"""
 class SimpleWtGym(gym.Env):
     def __init__(self, Vx=18, wg_nom=0.79, t_max=40, logging_level=logging.INFO):
         logging.debug("Initializing SimpeWTGym")
@@ -86,7 +91,6 @@ class SimpleWtGym(gym.Env):
         minPitch = np.radians(5)
         maxPitch = np.radians(45)
         pitch = self.wt_sim.x[2]
-
 
         self.pitch_increment = norm_delta_pitch*2*self.wt_sim.dt # Max 2 deg/s
         new_pitch = pitch + np.radians(self.pitch_increment)    

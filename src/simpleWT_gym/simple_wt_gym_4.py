@@ -76,15 +76,10 @@ class SimpleWtGym4(gym.Env):
         #Pitch incremental inputs
         minPitch = np.radians(5)
         maxPitch = np.radians(45)
-        #pitch = self.wt_sim.x[2]
-
-
-        #self.pitch_increment = norm_delta_pitch*2*self.wt_sim.dt # Max 2 deg/s
-        #new_pitch = pitch + np.radians(self.pitch_increment)    
-        new_pitch = np.clip(new_pitch, minPitch, maxPitch) #Clamp between min and max pitch
+        #new_pitch = np.clip(new_pitch, minPitch, maxPitch) #Clamp between min and max pitch
         self.pitch_ctrl = new_pitch
 
-        Vx = self.Vx
+        Vx=self.Vx=actions[1]
 
         return [new_pitch, Vx]
    

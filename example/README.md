@@ -1,0 +1,3 @@
+Comparison report with Simulink done with File pitch0_WindTurbineSimulator.py
+
+simple_wt_gym_4 validated with pitch0_simple_wt_gym_4

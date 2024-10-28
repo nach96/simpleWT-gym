@@ -99,7 +99,7 @@ class WindTurbineDynamics():
         wind_speed = u[1]
 
         # Saturation tricks from Simulink to keep things in range
-        w = np.clip(w, 0.0, 50)
+        w = np.clip(w, 2.5, 50)
         pitch = np.clip(pitch, np.deg2rad(0), np.deg2rad(90))
         wind_speed = np.clip(wind_speed, 1.8, 25)
 
@@ -165,14 +165,6 @@ class WindTurbineDynamics():
         dxdt =  [dpitchdt, d2pitchd2t]
         return dxdt
     
-    ########## DEPRECEATED ##########
-    # Pitch Transfer Function. Think how to integrate with the system.
-    def pitch_actuator_TF(self):
-        num = [0.15]
-        den = [0.15 , 1, 0.15]
-        pitch_tf = signal.TransferFunction(num, den)
-        return pitch_tf
-
 class RotorDynamics():
     def __init__(self):
         logging.info("Rotor dynamics initialized")
