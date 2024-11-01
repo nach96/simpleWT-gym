@@ -18,10 +18,10 @@ class SimpleWtGym4(gym.Env):
         self.t_max = t_max
 
         #GYM API DEFINITION
-        #Action: Pitch
+        #Action: Pitch [rad]
         low_action = np.array([np.deg2rad(0)], dtype=np.float32)
         high_action = np.array([np.deg2rad(90)], dtype=np.float32)  
-        #Observations: GenSpeed error, Pitch, Wind Speed x
+        #Observations: GenSpeed error [rad/s], Pitch [rad], Wind Speed x [m/s]
         low_obs = np.array([-10,0,0], dtype=np.float32)
         high_obs = np.array([10,np.deg2rad(90),40], dtype=np.float32)
         self.set_spaces(low_action, high_action, low_obs, high_obs)
@@ -74,12 +74,12 @@ class SimpleWtGym4(gym.Env):
     def map_inputs(self,actions):
         new_pitch = actions[0]
         #Pitch incremental inputs
-        minPitch = np.radians(5)
-        maxPitch = np.radians(45)
+        minPitch = np.radians(0)
+        maxPitch = np.radians(90)
         #new_pitch = np.clip(new_pitch, minPitch, maxPitch) #Clamp between min and max pitch
         self.pitch_ctrl = new_pitch
 
-        Vx=self.Vx=actions[1]
+        Vx=self.Vx=7.5
 
         return [new_pitch, Vx]
    
