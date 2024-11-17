@@ -7,14 +7,16 @@ import numpy as np
 from simpleWT_gym.wt_dynamics import WindTurbineSimulator
 
 """
-Action: Pitch increment (normalized) (+Pitch_ref)
-Observations: GenSpeed error, Pitch, Wind Speed x
+Action: Pitch increment (normalized [-1,1]) (+Pitch_ref)
+Observations: GenSpeed error, Pitch, Wind Speed x, Pitch_ref
 Rewards: -speed_error^2
 """
-class SimpleWtGym2(gym.Env):
-    def __init__(self,inputFileName="", Vx=18, wg_nom=40, t_max=40, burn_in_time=0, Tem_ini=1.978655e7, Pitch_ini=15.55, pg_nom=1.5e7, logging_level=logging.INFO):
+class SimpleWtGym3(gym.Env):
+    def __init__(self,inputFileName="", Vx=18, wg_nom=40, t_max=40, burn_in_time=0, control_time_step=0.2, Tem_ini=1.978655e7, Pitch_ini=15.55, pg_nom=1.5e7, logging_level=logging.INFO):
         #inputFileName pending. Hardcoded params in WindTurbineSimulator
         logging.debug("Initializing SimpeWTGym")
+
+        self.control_time_step=control_time_step #s
         #Simulation parameters
         self.Vx = Vx
         self.wg_nom = wg_nom
@@ -27,7 +29,7 @@ class SimpleWtGym2(gym.Env):
         high_action = np.array([1], dtype=np.float32)  
         #Observations: GenSpeed error, Pitch, Wind Speed x
         low_obs = np.array([-10,0,0,0], dtype=np.float32)
-        high_obs = np.array([10,np.pi/2,40],np.pi/2, dtype=np.float32)
+        high_obs = np.array([10,np.pi/2,40,np.pi/2], dtype=np.float32)
         self.set_spaces(low_action, high_action, low_obs, high_obs)
 
         #Logging
@@ -38,13 +40,22 @@ class SimpleWtGym2(gym.Env):
     def step(self, action):
         logging.debug("Action: {}".format(action))
         actions = self.map_inputs(action)
-        self.state = self.wt_sim.step(actions)
+        self.state = self.control_step(actions)
         obs = self.map_outputs(self.state)
         reward = self.reward(obs)
         done = self.do_terminate()
         self.log_callback()
 
         return obs, reward, done, {}
+    
+    def control_step(self, actions):
+        steps = self.control_time_step/self.wt_sim.dt
+
+        #Loop during control time step
+        for i in range(int(steps)):
+            state = self.wt_sim.step(actions)
+
+        return state
 
     def reset(self):
         logging.debug("Resetting environment.")
@@ -95,7 +106,7 @@ class SimpleWtGym2(gym.Env):
         maxPitch = np.radians(90)
         pitch_ref = self.wt_sim.wt.pitch_ref #[rad]
 
-        self.pitch_increment = norm_delta_pitch*np.radians(2)*self.wt_sim.dt # [rad] Norm 1 = 2 deg/s
+        self.pitch_increment = norm_delta_pitch*np.radians(5)*self.control_time_step # [rad] Norm 1 = 5 deg/s
         new_pitch = pitch_ref + self.pitch_increment   
         new_pitch = np.clip(new_pitch, minPitch, maxPitch) #Clamp between min and max pitch
 
@@ -108,12 +119,13 @@ class SimpleWtGym2(gym.Env):
         error_wg = self.wg_nom-wg
         pitch = outputs[2]
         Vx = self.Vx
-        gym_obs=[error_wg,pitch,Vx]   
+        pitch_ref = self.wt_sim.wt.pitch_ref 
+        
+        gym_obs=[error_wg,pitch,Vx,pitch_ref]   
         return gym_obs
     
     def log_callback(self):
         if self.enable_myLog:
-            #if self.wt_sim.ti % 0.1 < 0.01:                
             self.myLog.append({
                 "time": self.wt_sim.ti,
                 "Pitch_increment": self.pitch_increment,

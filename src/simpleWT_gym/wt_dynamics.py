@@ -164,6 +164,11 @@ class WindTurbineDynamics():
 
         dxdt =  [dpitchdt, d2pitchd2t]
         return dxdt
+
+    def pitch_actuator_ode_2(self,x,u):
+        # Change pitch actuator model to a ramp (PID+saturator+integrator)
+        dxdt = 1
+        return dxdt
     
 class RotorDynamics():
     def __init__(self):

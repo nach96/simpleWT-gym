@@ -39,7 +39,7 @@ def main():
     wind = 12.3
     tmax = 500
 
-    env = SimpleWtGym2(t_max=tmax)
+    env = SimpleWtGym2(t_max=tmax,burn_in_time=1)
     obs = env.reset()
 
 

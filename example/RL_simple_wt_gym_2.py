@@ -20,12 +20,12 @@ def float_to_int(in_dict):
 
 # MODEL AND ENVIRONMENT PARAMETERS
 model_params = {
-    "learning_starts": 1e3,
+    "learning_starts": 1e4,
     "learning_rate": 1e-3,
     "gamma": 0.98,
     "gradient_steps": 1,
     "train_freq": 100,
-    "buffer_size": 1e5,
+    "buffer_size": 1e4,
     "batch_size": 256,
     "verbose":1
     }
@@ -42,7 +42,7 @@ def main():
     #obs = env.reset()
 
     model = TD3("MlpPolicy", env, **model_params, policy_kwargs=net_kwargs)
-    model.learn(total_timesteps=1e5)
+    model.learn(total_timesteps=4e4)
 
     utils.log_and_exit(env.myLog,"gym_RL")
 
