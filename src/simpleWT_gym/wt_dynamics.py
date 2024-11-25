@@ -105,7 +105,11 @@ class WindTurbineDynamics():
 
         #Wind Turbine dynamics
         tip_speed_ratio = self.tip_speed_ratio(wind_speed, w)
-        [dpitchdt, d2pitchd2t] = self.pitch_actuator_ode([pitch,dpitchdt],[pitch_ref])
+
+        #[dpitchdt, d2pitchd2t] = self.pitch_actuator_ode([pitch,dpitchdt],[pitch_ref])
+        [dpitchdt, d2pitchd2t] = self.pitch_actuator_ode_1st_order([pitch,dpitchdt],[pitch_ref])
+
+
         lambda_i = self.lambda_i(tip_speed_ratio, pitch)
         Cp = self.c_p(lambda_i,pitch)
         Tm = self.tm(Cp,wind_speed,w)
@@ -165,10 +169,20 @@ class WindTurbineDynamics():
         dxdt =  [dpitchdt, d2pitchd2t]
         return dxdt
 
-    def pitch_actuator_ode_2(self,x,u):
-        # Change pitch actuator model to a ramp (PID+saturator+integrator)
-        dxdt = 1
+    def pitch_actuator_ode_1st_order(self,x,u):
+        pitch_ref = u[0]
+        pitch = x[0]
+        d2pitchd2t = 0
+
+        tao=2 #time constant [s]
+        dpitchdt = 1/tao*(pitch_ref-pitch)
+
+        max_dptich = np.radians(5) #5º/s
+        dpitchdt = np.clip(dpitchdt, -max_dptich, max_dptich)
+
+        dxdt =  [dpitchdt, d2pitchd2t]
         return dxdt
+
     
 class RotorDynamics():
     def __init__(self):

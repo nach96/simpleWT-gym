@@ -119,7 +119,7 @@ class SimpleWtGym3(gym.Env):
         error_wg = self.wg_nom-wg
         pitch = outputs[2]
         Vx = self.Vx
-        pitch_ref = self.wt_sim.wt.pitch_ref 
+        pitch_ref = self.wt_sim.wt.pitch_ref
         
         gym_obs=[error_wg,pitch,Vx,pitch_ref]   
         return gym_obs

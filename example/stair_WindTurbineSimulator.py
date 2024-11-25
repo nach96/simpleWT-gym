@@ -49,7 +49,7 @@ def step_40deg(ts):
     if ts<40:
         pitch_ctrl = 0
     elif ts<80:
-        pitch_ctrl = np.radians(40)
+        pitch_ctrl = np.radians(10)
     elif ts<120:
         pitch_ctrl = np.pi/3
     elif ts<160:
@@ -102,11 +102,12 @@ def main():
         #pitch_ctrl = np.deg2rad(0)
         #pitch_ctrl = pitch_stair(env.ti)
         pitch_ctrl = step_40deg(env.ti)
+        #pitch_ctrl = deg2_mini_stair(env.ti)
         actions = [pitch_ctrl,wind]
         state = env.step(actions)
         wg = env.x[0]
     
-    utils.log_and_exit(env.myLog,"WT_Dynamics_deg2_mini_stair")
+    utils.log_and_exit(env.myLog,"WT_Dynamics_Step10_1st_order")
 
 if __name__ == "__main__":
     main()
