@@ -8,16 +8,18 @@ from simpleWT_gym.wt_dynamics import WindTurbineSimulator
 
 """
 Action: Pitch increment (normalized [-1,1]) (+Pitch_ref)
-Observations: GenSpeed error, Pitch, Wind Speed x, Pitch_ref
+Observations: GenSpeed error, Pitch, Wind Speed x [12,13], Pitch_ref
 Rewards: -speed_error^2
+Wind sinusoidal
 """
-class SimpleWtGym3(gym.Env):
+class SimpleWtGym6(gym.Env):
     def __init__(self,inputFileName="", Vx=18, wg_nom=40, t_max=40, burn_in_time=0, control_time_step=0.2, Tem_ini=1.978655e7, Pitch_ini=15.55, pg_nom=1.5e7, logging_level=logging.INFO):
         #inputFileName pending. Hardcoded params in WindTurbineSimulator
         logging.debug("Initializing SimpeWTGym")
 
         self.control_time_step=control_time_step #s
         #Simulation parameters
+        self.Vx_0 = Vx # Mean wind speed (addup sine wave +-0.3)
         self.Vx = Vx
         self.wg_nom = wg_nom
         self.t_max = t_max
@@ -28,8 +30,8 @@ class SimpleWtGym3(gym.Env):
         low_action = np.array([-1], dtype=np.float32)
         high_action = np.array([1], dtype=np.float32)  
         #Observations: GenSpeed error, Pitch, Wind Speed x, Pitch_ref
-        low_obs = np.array([-10,0,0,0], dtype=np.float32)
-        high_obs = np.array([10,np.pi/2,40,np.pi/2], dtype=np.float32)
+        low_obs = np.array([-10,0,12,0], dtype=np.float32)
+        high_obs = np.array([10,np.pi/2,13,np.pi/2], dtype=np.float32)
         self.set_spaces(low_action, high_action, low_obs, high_obs)
 
         #Logging
@@ -39,20 +41,22 @@ class SimpleWtGym3(gym.Env):
 
     def step(self, action):
         logging.debug("Action: {}".format(action))
-        actions = self.map_inputs(action)
-        self.state = self.control_step(actions)
-        obs = self.map_outputs(self.state)
-        reward = self.reward(obs)
+        self.actions = self.map_inputs(action)
+        self.state = self.control_step(self.actions)
+        self.obs = self.map_outputs(self.state)
+        reward = self.reward(self.obs)
         done = self.do_terminate()
         self.log_callback()
 
-        return obs, reward, done, {}
+        return self.obs, reward, done, {}
     
     def control_step(self, actions):
         steps = self.control_time_step/self.wt_sim.dt
 
         #Loop during control time step
         for i in range(int(steps)):
+            #Update wind at simulation frequency
+            actions[1] = self.sine_wind()
             state = self.wt_sim.step(actions)
 
         return state
@@ -62,15 +66,15 @@ class SimpleWtGym3(gym.Env):
         #Init Wind Turbine
         self.wt_sim = WindTurbineSimulator()
         self.state = self.wt_sim.wt.x0
-        obs = self.map_outputs(self.state)
+        self.obs = self.map_outputs(self.state)
 
         #After reset, run initial steps.
-        obs = self.run_burn_in(obs)
-        return obs
+        self.obs = self.run_burn_in(self.obs)
+        return self.obs
     
     def run_burn_in(self,obs):
         while (self.wt_sim.ti < self.burn_in_time):
-            actions = [0.0,self.Vx]
+            actions = [0.0,self.sine_wind()]
             obs, *_ = self.step(actions)
         return obs
 
@@ -110,10 +114,15 @@ class SimpleWtGym3(gym.Env):
         new_pitch = pitch_ref + self.pitch_increment   
         new_pitch = np.clip(new_pitch, minPitch, maxPitch) #Clamp between min and max pitch
 
-        Vx = self.Vx
+        Vx = self.sine_wind()
 
         return [new_pitch, Vx]
     
+    def sine_wind(self):
+        #Freq 0.5Hz; Amplitude = 0.3
+        self.Vx = self.Vx_0 + np.sin(0.02*2*np.pi*self.wt_sim.ti)*0.15
+        return self.Vx
+   
     def map_outputs(self, outputs):
         wg = outputs[0]
         error_wg = self.wg_nom-wg
@@ -139,5 +148,11 @@ class SimpleWtGym3(gym.Env):
                 "w": self.wt_sim.wt.w,
                 "pitch": self.wt_sim.wt.pitch,
                 "dpitch": self.wt_sim.wt.dptich,
-                "pitch_ref": self.wt_sim.wt.pitch_ref
+                "pitch_ref": self.wt_sim.wt.pitch_ref,
+                "Vx": self.Vx,
+                "actions.pitch": self.actions[0],
+                "obs.error_wg": self.obs[0],
+                "obs.pitch": self.obs[1],
+                "obs.Vx": self.obs[2],
+                "obs.pitch_ref": self.obs[3]
             })

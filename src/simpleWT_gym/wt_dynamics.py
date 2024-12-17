@@ -174,7 +174,7 @@ class WindTurbineDynamics():
         pitch = x[0]
         d2pitchd2t = 0
 
-        tao=2 #time constant [s]
+        tao=0.2 #time constant [s]
         dpitchdt = 1/tao*(pitch_ref-pitch)
 
         max_dptich = np.radians(5) #5º/s
