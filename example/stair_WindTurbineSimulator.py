@@ -100,8 +100,8 @@ def main():
 
     while env.ti < 80:
         #pitch_ctrl = np.deg2rad(0)
-        #pitch_ctrl = pitch_stair(env.ti)
-        pitch_ctrl = step_40deg(env.ti)
+        pitch_ctrl = pitch_stair(env.ti)
+        #pitch_ctrl = step_40deg(env.ti)
         #pitch_ctrl = deg2_mini_stair(env.ti)
         actions = [pitch_ctrl,wind]
         state = env.step(actions)

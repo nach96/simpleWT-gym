@@ -13,7 +13,7 @@ class WindTurbineSimulator():
         self.ti=0.0             #Initial time
 
         # Logging
-        self.enable_myLog = 1
+        self.enable_myLog = 0
         self.myLog = []
 
     def step(self,u):
@@ -129,7 +129,7 @@ class WindTurbineDynamics():
         self.Ia = Ia
         self.Ea = Ea
         self.w = w
-        self.pitch = pitch
+        self.pitch = pitch 
         self.dptich = dpitchdt
         self.pitch_ref = pitch_ref
         self.power = power
